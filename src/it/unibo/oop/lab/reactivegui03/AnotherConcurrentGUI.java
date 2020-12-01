@@ -1,4 +1,4 @@
-package it.unibo.oop.lab.reactivegui02;
+package it.unibo.oop.lab.reactivegui03;
 
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -12,8 +12,9 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
 
+public class AnotherConcurrentGUI extends JFrame {
 
-public class ConcurrentGUI extends JFrame {
+    /* My Components */
     private static final long serialVersionUID = 1L;
     private static final double WIDTH_PERC = 0.2;
     private static final double HEIGHT_PERC = 0.1;
@@ -22,8 +23,10 @@ public class ConcurrentGUI extends JFrame {
     private final JButton up = new JButton("Up");
     private final JButton down = new JButton("Down");
     private final JButton stop = new JButton("Stop");
+    private final Agent agent = new Agent();
+    private final StopAgent stopper = new StopAgent();
 
-    public ConcurrentGUI() {
+    public AnotherConcurrentGUI() {
         /* Setto le dimensioni */
         final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         this.setSize((int) (screenSize.getWidth() * WIDTH_PERC), (int) (screenSize.getHeight() * HEIGHT_PERC));
@@ -35,7 +38,6 @@ public class ConcurrentGUI extends JFrame {
         flowPanel.add(this.stop);
 
         /* Agent */
-        final Agent agent = new Agent();
 
         /* Listener */
         /* Up */
@@ -48,22 +50,26 @@ public class ConcurrentGUI extends JFrame {
         });
         /* Stop */
         this.stop.addActionListener(e -> {
-            agent.stopCounting();
-            up.setEnabled(false);
-            down.setEnabled(false);
-            stop.setEnabled(false);
         });
 
         /* Thread */
         new Thread(agent).start();
+        new Thread(stopper).start();
 
         /* Imposto il frame */
         this.setDefaultCloseOperation(EXIT_ON_CLOSE);
         this.setContentPane(this.flowPanel);
         this.setVisible(true);
     }
+    /*Stop function*/
+    private void stopGUI() {
+        agent.stopCounting();
+        up.setEnabled(false);
+        down.setEnabled(false);
+        stop.setEnabled(false);
+    }
 
-    /* Class Agent */
+    /* Class Agent Counter */
     private class Agent implements Runnable {
 
         private volatile boolean stop;
@@ -73,7 +79,7 @@ public class ConcurrentGUI extends JFrame {
         public void run() {
             while (!this.stop) {
                 try {
-                    SwingUtilities.invokeAndWait(() -> ConcurrentGUI.this.label.setText(Integer.toString(Agent.this.counter)));
+                    SwingUtilities.invokeAndWait(() -> AnotherConcurrentGUI.this.label.setText(Integer.toString(Agent.this.counter)));
                     if (upDown) {
                         this.counter++;
                     } else {
@@ -98,5 +104,21 @@ public class ConcurrentGUI extends JFrame {
         public void setDown() {
             this.upDown = false;
         }
+    }
+
+    /*Stop Agent*/
+    private class StopAgent implements Runnable {
+        private static final int STOP_TIME = 10_000;
+
+        public void run() {
+            try {
+                Thread.sleep(STOP_TIME);
+                stopGUI();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+        }
+
     }
 }
